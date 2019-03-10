@@ -1,20 +1,25 @@
 package tech.tablesaw.io.json;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.wnameless.json.flattener.JsonFlattener;
+
 import tech.tablesaw.api.Table;
 import tech.tablesaw.io.ReadOptions;
 import tech.tablesaw.io.TableBuildingUtils;
-
-import java.io.IOException;
-import java.util.*;
 
 public class JsonReader {
 
     private static final ObjectMapper mapper = new ObjectMapper();
 
-    public Table read(ReadOptions options) throws IOException {
+    public Table read(JsonReadOptions options) throws IOException {
         JsonNode jsonObj = mapper.readTree(TableBuildingUtils.createReader(options, null));
         if (!jsonObj.isArray()) {
             throw new IllegalStateException(
