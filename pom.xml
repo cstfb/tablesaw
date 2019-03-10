@@ -51,6 +51,7 @@
         <module>json</module>
         <module>jsplot</module>
         <module>smile</module>
+        <module>jandas-sdk</module>
     </modules>
 
     <profiles>
