@@ -1,4 +1,4 @@
-package tech.tablesaw.jandas.func;
+package tech.tablesaw.pandas.func;
 
 public class DataManipulationUtil {
 }
