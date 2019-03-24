@@ -2,9 +2,12 @@ package tech.tablesaw.pandas.dataframe;
 
 import tech.tablesaw.api.*;
 import tech.tablesaw.columns.Column;
+import tech.tablesaw.columns.numbers.*;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 
 /**
@@ -72,24 +75,58 @@ public class DataFrame extends Table {
                     Column column = column(columnName);
                     Field field = fieldMap.get(columnName);
                     Object columnValue = field.get(obj);
+
+                    // data pre-processed
+                    if (Date.class.isAssignableFrom(field.getType())) {
+                        // date value -> convert LocalDateTime
+                        if (columnValue != null) {
+                            columnValue = LocalDateTime.ofInstant(((Date) columnValue).toInstant(), ZoneId.systemDefault());
+                        }
+                    }
+
+                    //primitive types can not have null
+                    if (null == columnValue) {
+                        if (Double.class.isAssignableFrom(field.getType())) {
+                            columnValue = DoubleColumnType.missingValueIndicator();
+                        } else if (Float.class.isAssignableFrom(field.getType())) {
+                            columnValue = FloatColumnType.missingValueIndicator();
+                        } else if (Integer.class.isAssignableFrom(field.getType())) {
+                            columnValue = IntColumnType.missingValueIndicator();
+                        } else if (Long.class.isAssignableFrom(field.getType())) {
+                            columnValue = LongColumnType.missingValueIndicator();
+                        } else if (Short.class.isAssignableFrom(field.getType())) {
+                            columnValue = ShortColumnType.missingValueIndicator();
+                        }
+                    }
+
+                    // route to columns
                     if (null == column) {
                         // create new column according to data type + auto detect
-                        if (boolean.class.isAssignableFrom(field.getType())) {
+                        if (boolean.class.isAssignableFrom(field.getType())
+                                || Boolean.class.isAssignableFrom(field.getType())) {
                             column = BooleanColumn.create(columnName);
                         } else if (Date.class.isAssignableFrom(field.getType())) {
                             column = DateTimeColumn.create(columnName);
-                        } else if (double.class.isAssignableFrom(field.getType())) {
+                        } else if (double.class.isAssignableFrom(field.getType())
+                                || Double.class.isAssignableFrom(field.getType())) {
                             column = DoubleColumn.create(columnName);
-                        } else if (float.class.isAssignableFrom(field.getType())) {
+                        } else if (float.class.isAssignableFrom(field.getType())
+                                || Float.class.isAssignableFrom(field.getType())) {
                             column = FloatColumn.create(columnName);
-                        } else if (int.class.isAssignableFrom(field.getType())) {
+                        } else if (int.class.isAssignableFrom(field.getType())
+                                || Integer.class.isAssignableFrom(field.getType())) {
                             column = IntColumn.create(columnName);
-                        } else if (long.class.isAssignableFrom(field.getType())) {
+                        } else if (long.class.isAssignableFrom(field.getType())
+                                || Long.class.isAssignableFrom(field.getType())) {
                             column = LongColumn.create(columnName);
-                        } else if (short.class.isAssignableFrom(field.getType())) {
+                        } else if (short.class.isAssignableFrom(field.getType())
+                                || Short.class.isAssignableFrom(field.getType())) {
                             column = ShortColumn.create(columnName);
                         } else if (String.class.isAssignableFrom(field.getType())) {
                             column = StringColumn.create(columnName);
+                        } else {
+                            // todo objectColumn
+                            continue;
                         }
 
                         // add column
@@ -121,6 +158,9 @@ public class DataFrame extends Table {
         return null;
     }
 
+    /**
+     * get all properties and its type of a bean, inlcude its parent class, Object excluded
+     */
     Map<String, Field> getAllFieldOfBean(Object obj) {
         Map<String, Field> fieldMap = new HashMap<>(8);
         Class tmpClz = obj.getClass();

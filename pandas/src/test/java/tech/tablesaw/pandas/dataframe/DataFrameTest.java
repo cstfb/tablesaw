@@ -19,11 +19,19 @@ public class DataFrameTest {
     }
 
     public class Entity1 {
-        private int a = 1;
+        private int aB = 1;
         private boolean b = false;
         private Date c = new Date();
-        private float e = 1.0f;
+        private float eE = 1.0f;
         private double f = 2.0;
         private String g = "abc";
+        private Object eee = null;
+
+        private Integer Ing = null;
+        private Boolean b_ = null;
+        private Date c_ = null;
+        private Float eE_ = null;
+        private Double f_ = null;
+        private String g_ = null;
     }
 }
