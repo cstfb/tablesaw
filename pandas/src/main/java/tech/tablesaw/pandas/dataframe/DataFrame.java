@@ -76,26 +76,28 @@ public class DataFrame extends Table {
                         // create new column according to data type + auto detect
                         if (boolean.class.isAssignableFrom(field.getType())) {
                             column = BooleanColumn.create(columnName);
-                        } else if (Date.class.isAssignableFrom(field.getClass())) {
+                        } else if (Date.class.isAssignableFrom(field.getType())) {
                             column = DateTimeColumn.create(columnName);
-                        } else if (double.class.isAssignableFrom(field.getClass())) {
+                        } else if (double.class.isAssignableFrom(field.getType())) {
                             column = DoubleColumn.create(columnName);
-                        } else if (float.class.isAssignableFrom(field.getClass())) {
+                        } else if (float.class.isAssignableFrom(field.getType())) {
                             column = FloatColumn.create(columnName);
-                        } else if (int.class.isAssignableFrom(field.getClass())) {
+                        } else if (int.class.isAssignableFrom(field.getType())) {
                             column = IntColumn.create(columnName);
-                        } else if (long.class.isAssignableFrom(field.getClass())) {
+                        } else if (long.class.isAssignableFrom(field.getType())) {
                             column = LongColumn.create(columnName);
-                        } else if (short.class.isAssignableFrom(field.getClass())) {
+                        } else if (short.class.isAssignableFrom(field.getType())) {
                             column = ShortColumn.create(columnName);
-                        } else if (String.class.isAssignableFrom(field.getClass())) {
+                        } else if (String.class.isAssignableFrom(field.getType())) {
                             column = StringColumn.create(columnName);
                         }
 
                         // add column
+                        column.append(columnValue);
                         addColumns(column);
+                    } else {
+                        column.append(columnValue);
                     }
-                    column.append(columnValue);
                 }
             }
         } catch (Exception e) {
