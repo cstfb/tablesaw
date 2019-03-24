@@ -18,6 +18,7 @@ testoutput/
 *.iml
 .idea/
 .DS_Store
+.factorypath
 
 # Eclipse
 .project
