@@ -14,6 +14,17 @@ import java.util.*;
  * a pandas-style api based on {@link tech.tablesaw.api.Table}
  *
  * about inPlace / copy option: //todo
+ *
+ * <p>
+ *     problems :
+ *          1. DataFrame init : type detector(from Class<T>) and data convert layer need to be optimized,
+ *                      
+ *          2. Some type like BigDecimal, generic Object can not be handled correctly,
+ *                  for example , there is no ObjectColumn or BigDecimalColumn ,
+ *                  in pandas , column can hold complex object like 'list'
+ *
+ *          3. primitive type can not have null value , instead of missing_value , may be cause unexpected behavior
+ * </p>
  */
 //@Immutable
 public class DataFrame extends Table {
@@ -75,9 +86,10 @@ public class DataFrame extends Table {
                     Column column = column(columnName);
                     Field field = fieldMap.get(columnName);
                     Object columnValue = field.get(obj);
+                    Class fieldType = field.getType();
 
                     // data pre-processed
-                    if (Date.class.isAssignableFrom(field.getType())) {
+                    if (Date.class.isAssignableFrom(fieldType)) {
                         // date value -> convert LocalDateTime
                         if (columnValue != null) {
                             columnValue = LocalDateTime.ofInstant(((Date) columnValue).toInstant(), ZoneId.systemDefault());
@@ -86,15 +98,15 @@ public class DataFrame extends Table {
 
                     //primitive types can not have null
                     if (null == columnValue) {
-                        if (Double.class.isAssignableFrom(field.getType())) {
+                        if (Double.class.isAssignableFrom(fieldType)) {
                             columnValue = DoubleColumnType.missingValueIndicator();
-                        } else if (Float.class.isAssignableFrom(field.getType())) {
+                        } else if (Float.class.isAssignableFrom(fieldType)) {
                             columnValue = FloatColumnType.missingValueIndicator();
-                        } else if (Integer.class.isAssignableFrom(field.getType())) {
+                        } else if (Integer.class.isAssignableFrom(fieldType)) {
                             columnValue = IntColumnType.missingValueIndicator();
-                        } else if (Long.class.isAssignableFrom(field.getType())) {
+                        } else if (Long.class.isAssignableFrom(fieldType)) {
                             columnValue = LongColumnType.missingValueIndicator();
-                        } else if (Short.class.isAssignableFrom(field.getType())) {
+                        } else if (Short.class.isAssignableFrom(fieldType)) {
                             columnValue = ShortColumnType.missingValueIndicator();
                         }
                     }
@@ -102,27 +114,27 @@ public class DataFrame extends Table {
                     // route to columns
                     if (null == column) {
                         // create new column according to data type + auto detect
-                        if (boolean.class.isAssignableFrom(field.getType())
-                                || Boolean.class.isAssignableFrom(field.getType())) {
+                        if (boolean.class.isAssignableFrom(fieldType)
+                                || Boolean.class.isAssignableFrom(fieldType)) {
                             column = BooleanColumn.create(columnName);
-                        } else if (Date.class.isAssignableFrom(field.getType())) {
+                        } else if (Date.class.isAssignableFrom(fieldType)) {
                             column = DateTimeColumn.create(columnName);
-                        } else if (double.class.isAssignableFrom(field.getType())
-                                || Double.class.isAssignableFrom(field.getType())) {
+                        } else if (double.class.isAssignableFrom(fieldType)
+                                || Double.class.isAssignableFrom(fieldType)) {
                             column = DoubleColumn.create(columnName);
-                        } else if (float.class.isAssignableFrom(field.getType())
-                                || Float.class.isAssignableFrom(field.getType())) {
+                        } else if (float.class.isAssignableFrom(fieldType)
+                                || Float.class.isAssignableFrom(fieldType)) {
                             column = FloatColumn.create(columnName);
-                        } else if (int.class.isAssignableFrom(field.getType())
-                                || Integer.class.isAssignableFrom(field.getType())) {
+                        } else if (int.class.isAssignableFrom(fieldType)
+                                || Integer.class.isAssignableFrom(fieldType)) {
                             column = IntColumn.create(columnName);
-                        } else if (long.class.isAssignableFrom(field.getType())
-                                || Long.class.isAssignableFrom(field.getType())) {
+                        } else if (long.class.isAssignableFrom(fieldType)
+                                || Long.class.isAssignableFrom(fieldType)) {
                             column = LongColumn.create(columnName);
-                        } else if (short.class.isAssignableFrom(field.getType())
-                                || Short.class.isAssignableFrom(field.getType())) {
+                        } else if (short.class.isAssignableFrom(fieldType)
+                                || Short.class.isAssignableFrom(fieldType)) {
                             column = ShortColumn.create(columnName);
-                        } else if (String.class.isAssignableFrom(field.getType())) {
+                        } else if (String.class.isAssignableFrom(fieldType)) {
                             column = StringColumn.create(columnName);
                         } else {
                             // todo objectColumn
