@@ -1,8 +1,12 @@
 package tech.tablesaw.pandas.dataframe;
 
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 import tech.tablesaw.api.*;
 import tech.tablesaw.columns.Column;
 import tech.tablesaw.columns.numbers.*;
+import tech.tablesaw.selection.BitmapBackedSelection;
+import tech.tablesaw.selection.Selection;
+import tech.tablesaw.table.Relation;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -44,6 +48,12 @@ public class DataFrame extends Table {
      */
     public DataFrame(String name, Column<?>... columns) {
         super(name, columns);
+    }
+
+    public DataFrame(Table table) {
+//        super(table);
+        super(table.name());
+
     }
 
     /**
@@ -195,8 +205,8 @@ public class DataFrame extends Table {
 
     // columns / columnNames exists
 
-    public List<Class> dTypes() {
-        return null;
+    public ColumnType[] dTypes() {
+        return columnTypes();
     }
 
     /**
@@ -243,19 +253,93 @@ public class DataFrame extends Table {
      * @return
      */
     public DataFrame asType(Map<Column, ColumnType> dtypes, boolean copy) {
-        return null;
+        throw new NotImplementedException();
     }
 
     public DataFrame isna() {
-        return null;
+        DataFrame indicatorDataFrame = new DataFrame(name());
+        for (Column column : columns()) {
+            indicatorDataFrame.addColumns(isna(column));
+        }
+        return indicatorDataFrame;
+    }
+
+    private Column<Boolean> isna(Column column) {
+        Column<Boolean> indicator = BooleanColumn.create(column.name());
+        for (int idx = 0 ; idx < column.size() ; idx ++) {
+            if (column.isMissing(idx)) {
+                indicator.append(true);
+            } else {
+                indicator.append(false);
+            }
+        }
+        return indicator;
     }
 
     public DataFrame notna() {
-        return null;
+        DataFrame indicatorDataFrame = new DataFrame(name());
+        for (Column column : isna().columns()) {
+            indicatorDataFrame.addColumns(column.map(x -> !(boolean)x));
+        }
+        return indicatorDataFrame;
     }
 
-    /**********************/
+    /************************Index , Interation********************/
+    /**
+     * Return the first n rows.
+     * @param n
+     * @return
+     */
+    public DataFrame head(Integer n) {
+        if (n == null) {
+            n = 5;
+        }
+        return new DataFrame(first(n));
+    }
 
+    /**
+     * Access a single value for a row/column label pair.
+     *
+     * Similar to loc, in that both provide label-based lookups. Use at if you only need to get or set a single value in a DataFrame or Series.
+     * @return
+     */
+    public Object at(int row, String label) {
+        throw new NotImplementedException();
+    }
+
+    public Object iat(int row, int col) {
+        throw new NotImplementedException();
+    }
+
+    public Object loc() {
+        throw new NotImplementedException();
+    }
+
+    public Object iloc() {
+        throw new NotImplementedException();
+    }
+
+    public List<Column<?>> items() {
+        return columns();
+    }
+
+    public List<Column<?>> iteritems() {
+        return columns();
+    }
+
+
+
+    /************************Layer on Table API********************/
+    @Override
+    public DataFrame copy() {
+        return new DataFrame(this);
+    }
+
+    @Override
+    public DataFrame emptyCopy() {
+        //todo
+        return null;
+    }
 
 
     public static void main(String[] args) {
