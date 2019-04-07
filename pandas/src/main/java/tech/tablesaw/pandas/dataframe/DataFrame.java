@@ -13,21 +13,23 @@ import java.lang.reflect.Modifier;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 /**
  * a pandas-style api based on {@link tech.tablesaw.api.Table}
- *
- * about inPlace / copy option: //todo
- *
  * <p>
- *     problems :
- *          1. DataFrame init : type detector(from Class<T>) and data convert layer need to be optimized,
- *                      
- *          2. Some type like BigDecimal, generic Object can not be handled correctly,
- *                  for example , there is no ObjectColumn or BigDecimalColumn ,
- *                  in pandas , column can hold complex object like 'list'
- *
- *          3. primitive type can not have null value , instead of missing_value , may be cause unexpected behavior
+ * about inPlace / copy option: //todo
+ * <p>
+ * <p>
+ * problems :
+ * 1. DataFrame init : type detector(from Class<T>) and data convert layer need to be optimized,
+ * <p>
+ * 2. Some type like BigDecimal, generic Object can not be handled correctly,
+ * for example , there is no ObjectColumn or BigDecimalColumn ,
+ * in pandas , column can hold complex object like 'list'
+ * <p>
+ * 3. primitive type can not have null value , instead of missing_value , may be cause unexpected behavior
  * </p>
  */
 //@Immutable
@@ -75,7 +77,7 @@ public class DataFrame extends Table {
     /**
      * Returns a new Table with the given list; column name comes from property name;
      * cell value comes from property value;
-     *
+     * <p>
      * type decided by first element in data;
      *
      * @param data
@@ -166,7 +168,7 @@ public class DataFrame extends Table {
 
     /**
      * Returns the column with the given columnName, ignoring case
-     *
+     * <p>
      * return null if absent
      */
     @Override
@@ -266,7 +268,7 @@ public class DataFrame extends Table {
 
     private Column<Boolean> isna(Column column) {
         Column<Boolean> indicator = BooleanColumn.create(column.name());
-        for (int idx = 0 ; idx < column.size() ; idx ++) {
+        for (int idx = 0; idx < column.size(); idx++) {
             if (column.isMissing(idx)) {
                 indicator.append(true);
             } else {
@@ -279,7 +281,7 @@ public class DataFrame extends Table {
     public DataFrame notna() {
         DataFrame indicatorDataFrame = new DataFrame(name());
         for (Column column : isna().columns()) {
-            indicatorDataFrame.addColumns(column.map(x -> !(boolean)x));
+            indicatorDataFrame.addColumns(column.map(x -> !(boolean) x));
         }
         return indicatorDataFrame;
     }
@@ -287,6 +289,7 @@ public class DataFrame extends Table {
     /************************Index , Interation********************/
     /**
      * Return the first n rows.
+     *
      * @param n
      * @return
      */
@@ -298,9 +301,23 @@ public class DataFrame extends Table {
     }
 
     /**
-     * Access a single value for a row/column label pair.
+     * Return the last n rows.
      *
+     * @param n
+     * @return
+     */
+    public DataFrame tail(Integer n) {
+        if (n == null) {
+            n = 5;
+        }
+        return new DataFrame(last(n));
+    }
+
+    /**
+     * Access a single value for a row/column label pair.
+     * <p>
      * Similar to loc, in that both provide label-based lookups. Use at if you only need to get or set a single value in a DataFrame or Series.
+     *
      * @return
      */
     public Object at(int row, String label) {
@@ -327,6 +344,103 @@ public class DataFrame extends Table {
         return columns();
     }
 
+    /**
+     * column_names
+     *
+     * @return
+     */
+    public List<String> keys() {
+        return columnNames();
+    }
+
+    public Iterator<Row> iterrows() {
+        return iterator();
+    }
+
+    public Iterator<Row> itertuples() {
+        return iterator();
+    }
+
+    public Object lookup(int row, String col) {
+        return column(col).get(row);
+    }
+
+    /**
+     * Return item and drop from frame.
+     *
+     * @param col
+     * @return
+     */
+    public Column<?> pop(String col) {
+        Column ori = column(col);
+        removeColumns(col);
+        return ori;
+    }
+
+    public DataFrame xs() {
+        throw new NotImplementedException();
+    }
+
+    public List<Column<?>> get(String... colNames) {
+        return columns(colNames);
+    }
+
+    public DataFrame isin(List<Object> values) {
+        return map(
+                (col, col_item) -> values.contains(col_item),
+                col -> BooleanColumn.create(col.name())
+        );
+    }
+
+    public DataFrame isin(Map<String, List<Object>> colValues) {
+        return map(
+                (col, col_item) -> {
+                    if (colValues.containsKey(col.name())) {
+                        return colValues.get(col.name()).contains(col_item);
+                    } else {
+                        return false;
+                    }
+                },
+                col -> BooleanColumn.create(col.name())
+        );
+    }
+
+    public DataFrame map(BiFunction<Column<?>, Object, Object> fun,
+                         Function<Column<?>, Column> intoCol) {
+        DataFrame indicatorFrame = new DataFrame(name());
+        for (Column col : columns()) {
+            indicatorFrame.addColumns(
+                    col.mapInto(x -> fun.apply(col, x), intoCol.apply(col))
+            );
+        }
+        return indicatorFrame;
+    }
+
+    /**
+     * Replace values where the condition is False.
+     * @return
+     */
+    public DataFrame where() {
+        throw new NotImplementedException();
+    }
+
+    /**
+     * Replace values where the condition is True.
+     * @return
+     */
+    public DataFrame mask() {
+        throw new NotImplementedException();
+    }
+
+    /**
+     * Query the columns of a DataFrame with a boolean expression.
+     * @return
+     */
+    public DataFrame query() {
+        throw new NotImplementedException();
+    }
+
+    /************************Binary operator functions********************/
 
 
     /************************Layer on Table API********************/
