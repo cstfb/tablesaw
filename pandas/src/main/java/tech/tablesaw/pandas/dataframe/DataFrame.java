@@ -323,27 +323,52 @@ public class DataFrame extends Table {
      * @return
      */
     public Object at(int row, String label) {
-        throw new NotImplementedException();
+        return column(label).get(row);
     }
 
     public Object iat(int row, int col) {
-        throw new NotImplementedException();
+        return column(col).get(row);
     }
 
-    public Object loc() {
-        throw new NotImplementedException();
+    /**
+     * Access a group of rows and columns by label(s).
+     *
+     * @param rowSelection
+     * @param labels
+     * @return
+     */
+    public DataFrame loc(Selection rowSelection, List<String> labels) {
+        Table table = where(rowSelection);
+        List<String> dupCols = columnNames();
+        dupCols.removeAll(labels);
+        table.removeColumns(dupCols.toArray(new String[dupCols.size()]));
+        return new DataFrame(table);
     }
 
-    public Object iloc() {
-        throw new NotImplementedException();
+    /**
+     * Purely integer-location based indexing for selection by position.
+     *
+     * @param rowSelection
+     * @param colSelection
+     * @return
+     */
+    public Object iloc(Selection rowSelection, Selection colSelection) {
+        List<String> labels = new ArrayList<>();
+        List<String> cols = columnNames();
+        for (int i : colSelection) {
+            labels.add(cols.get(i));
+        }
+        return loc(rowSelection, labels);
     }
 
+    @Deprecated
     public List<Column<?>> items() {
         return columns();
     }
 
+    @Deprecated
     public List<Column<?>> iteritems() {
-        return columns();
+        return items();
     }
 
     /**
