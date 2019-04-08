@@ -1,6 +1,8 @@
 package tech.tablesaw.pandas.dataframe;
 
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
+import tech.tablesaw.aggregate.AggregateFunction;
+import tech.tablesaw.aggregate.Summarizer;
 import tech.tablesaw.api.*;
 import tech.tablesaw.columns.Column;
 import tech.tablesaw.columns.numbers.*;
@@ -418,6 +420,7 @@ public class DataFrame extends Table {
 
     /**
      * Replace values where the condition is False.
+     *
      * @return
      */
     public DataFrame where() {
@@ -426,6 +429,7 @@ public class DataFrame extends Table {
 
     /**
      * Replace values where the condition is True.
+     *
      * @return
      */
     public DataFrame mask() {
@@ -434,6 +438,7 @@ public class DataFrame extends Table {
 
     /**
      * Query the columns of a DataFrame with a boolean expression.
+     *
      * @return
      */
     public DataFrame query() {
@@ -441,8 +446,350 @@ public class DataFrame extends Table {
     }
 
     /************************Binary operator functions********************/
+    /**
+     * Addition of dataframe and other, element-wise (binary operator add).
+     */
+    public void add() {
+        throw new NotImplementedException();
+    }
+
+    /**
+     * Return whether all elements are True, potentially over an axis.
+     */
+    public void all() {
+        throw new NotImplementedException();
+    }
+
+    /**
+     * Multiplication of dataframe and other, element-wise (binary operator mul).
+     */
+    public void mul() {
+        throw new NotImplementedException();
+    }
+
+    /**
+     * Floating division of dataframe and other, element-wise (binary operator truediv).
+     */
+    public void div() {
+        throw new NotImplementedException();
+    }
+
+    /*
+    DataFrame.truediv(other[, axis, level, …])
+DataFrame.floordiv(other[, axis, level, …])
+DataFrame.mod(other[, axis, level, fill_value])
+DataFrame.pow(other[, axis, level, fill_value])
+DataFrame.dot(other)
+DataFrame.radd(other[, axis, level, fill_value])
+DataFrame.rsub(other[, axis, level, fill_value])
+DataFrame.rmul(other[, axis, level, fill_value])
+DataFrame.rdiv(other[, axis, level, fill_value])
+DataFrame.rtruediv(other[, axis, level, …])
+DataFrame.rfloordiv(other[, axis, level, …])
+DataFrame.rmod(other[, axis, level, fill_value])
+DataFrame.rpow(other[, axis, level, fill_value])
+DataFrame.lt(other[, axis, level])
+DataFrame.gt(other[, axis, level])
+DataFrame.le(other[, axis, level])
+DataFrame.ge(other[, axis, level])
+DataFrame.ne(other[, axis, level])
+DataFrame.eq(other[, axis, level])
+DataFrame.combine(other, func[, fill_value, …])
+DataFrame.combine_first(other)
+     */
 
 
+    /************************Function application, GroupBy & Window********************/
+    /**
+     * Apply a function along columns of the DataFrame.
+     *
+     * @return
+     */
+    public DataFrame apply(Function<Column, Column> func) {
+        DataFrame n = new DataFrame(name());
+        for (Column column : columns()) {
+            n.addColumns(func.apply(column));
+        }
+        return n;
+    }
+
+    /**
+     * Apply a function to a Dataframe elementwise.
+     *
+     * @param fun
+     * @param intoCol
+     * @return
+     */
+    public DataFrame applymap(BiFunction<Column<?>, Object, Object> fun,
+                              Function<Column<?>, Column> intoCol) {
+        return map(fun, intoCol);
+    }
+
+    /**
+     * Aggregate using one or more operations over the specified axis.
+     * <p>
+     * df.agg(['sum', 'min'])
+     * df.agg({'A' : ['sum', 'min'], 'B' : ['min', 'max']})
+     *
+     * @return
+     */
+    public DataFrame agg() {
+        throw new NotImplementedException();
+    }
+
+    /**
+     * same as applymap
+     *
+     * @param fun
+     * @param intoCol
+     * @return
+     */
+    public DataFrame transform(BiFunction<Column<?>, Object, Object> fun,
+                               Function<Column<?>, Column> intoCol) {
+        return applymap(fun, intoCol);
+    }
+
+    public Summarizer groupby(String columName, AggregateFunction<?, ?>... functions) {
+        return summarize(column(columName), functions);
+    }
+
+    public Summarizer groupby(List<String> columnNames, AggregateFunction<?, ?>... functions) {
+        return new Summarizer(this, columnNames, functions);
+    }
+
+    public Summarizer groupby(String numericColumn1Name, String numericColumn2Name, AggregateFunction<?, ?>... functions) {
+        return summarize(column(numericColumn1Name), column(numericColumn2Name), functions);
+    }
+
+    public Summarizer groupby(String col1Name, String col2Name, String col3Name, AggregateFunction<?, ?>... functions) {
+        return summarize(column(col1Name), column(col2Name), column(col3Name), functions);
+    }
+
+    public Summarizer groupby(String col1Name, String col2Name, String col3Name, String col4Name, AggregateFunction<?, ?>... functions) {
+        return summarize(column(col1Name), column(col2Name), column(col3Name), column(col4Name), functions);
+    }
+
+    public Summarizer groupby(Column<?> numberColumn, AggregateFunction<?, ?>... function) {
+        return new Summarizer(this, numberColumn, function);
+    }
+
+    public Summarizer groupby(Column<?> column1, Column<?> column2,
+                              AggregateFunction<?, ?>... function) {
+        return new Summarizer(this, column1, column2, function);
+    }
+
+    public Summarizer groupby(Column<?> column1, Column<?> column2, Column<?> column3,
+                              AggregateFunction<?, ?>... function) {
+        return new Summarizer(this, column1, column2, column3, function);
+    }
+
+    public Summarizer groupby(Column<?> column1, Column<?> column2, Column<?> column3, Column<?> column4,
+                              AggregateFunction<?, ?>... function) {
+        return new Summarizer(this, column1, column2, column3, column4, function);
+    }
+
+    public void rolling() {
+        /*
+        The recognized win_types are:
+            boxcar
+            triang
+            blackman
+            hamming
+            bartlett
+            parzen
+            bohman
+            blackmanharris
+            nuttall
+            barthann
+            kaiser (needs beta)
+            gaussian (needs std)
+            general_gaussian (needs power, width)
+            slepian (needs width).
+            If win_type=None all points are evenly weighted. To learn more about different window types see scipy.signal window functions.
+         */
+        throw new NotImplementedException();
+    }
+
+    public void expanding() {
+        throw new NotImplementedException();
+    }
+
+    public void ewm() {
+        throw new NotImplementedException();
+    }
+
+    /************************Computations / Descriptive Stats********************/
+    /**
+     * Return a Series/DataFrame with absolute numeric value of each element
+     * @return
+     */
+    public DataFrame abs() {
+        /*
+        typeError: bad operand type for abs(): 'str'
+         */
+        throw new NotImplementedException();
+    }
+
+    /**
+     * Return whether any element is True, potentially over an axis.
+     */
+    public void any() {
+        throw new NotImplementedException();
+    }
+
+    /**
+     * Trim values at input threshold(s).
+     */
+    public void clip() {
+        throw new NotImplementedException();
+    }
+
+/*
+DataFrame.compound([axis, skipna, level])
+DataFrame.corr([method, min_periods])
+DataFrame.corrwith(other[, axis, drop, method])
+DataFrame.count([axis, level, numeric_only])
+DataFrame.cov([min_periods])
+DataFrame.cummax([axis, skipna])
+DataFrame.cummin([axis, skipna])
+DataFrame.cumprod([axis, skipna])
+DataFrame.cumsum([axis, skipna])
+DataFrame.describe([percentiles, include, …])
+DataFrame.diff([periods, axis])
+DataFrame.eval(expr[, inplace])
+DataFrame.kurt([axis, skipna, level, …])
+DataFrame.kurtosis([axis, skipna, level, …])
+DataFrame.mad([axis, skipna, level])
+DataFrame.max([axis, skipna, level, …])
+DataFrame.mean([axis, skipna, level, …])
+DataFrame.median([axis, skipna, level, …])
+DataFrame.min([axis, skipna, level, …])
+DataFrame.mode([axis, numeric_only, dropna])
+DataFrame.pct_change([periods, fill_method, …])
+DataFrame.prod([axis, skipna, level, …])
+DataFrame.product([axis, skipna, level, …])
+DataFrame.quantile([q, axis, numeric_only, …])
+DataFrame.rank([axis, method, numeric_only, …])
+DataFrame.round([decimals])
+DataFrame.sem([axis, skipna, level, ddof, …])
+DataFrame.skew([axis, skipna, level, …])
+DataFrame.sum([axis, skipna, level, …])
+DataFrame.std([axis, skipna, level, ddof, …])
+DataFrame.var([axis, skipna, level, ddof, …])
+DataFrame.nunique([axis, dropna])
+ */
+
+    /************************Reindexing / Selection / Label manipulation********************/
+/*
+DataFrame.add_prefix(prefix)
+DataFrame.add_suffix(suffix)
+DataFrame.align(other[, join, axis, level, …])
+DataFrame.at_time(time[, asof, axis])
+DataFrame.between_time(start_time, end_time)
+DataFrame.drop([labels, axis, index, …])
+DataFrame.drop_duplicates([subset, keep, …])
+DataFrame.duplicated([subset, keep])
+DataFrame.equals(other)
+DataFrame.filter([items, like, regex, axis])
+DataFrame.first(offset)
+DataFrame.head([n])
+DataFrame.idxmax([axis, skipna])
+DataFrame.idxmin([axis, skipna])
+DataFrame.last(offset)
+DataFrame.reindex([labels, index, columns, …])
+DataFrame.reindex_like(other[, method, …])
+DataFrame.rename([mapper, index, columns, …])
+DataFrame.rename_axis([mapper, index, …])
+DataFrame.reset_index([level, drop, …])
+DataFrame.sample([n, frac, replace, …])
+DataFrame.set_axis(labels[, axis, inplace])
+DataFrame.set_index(keys[, drop, append, …])
+DataFrame.tail([n])
+DataFrame.take(indices[, axis, convert, is_copy])
+DataFrame.truncate([before, after, axis, copy])
+ */
+
+    /************************Missing data handling********************/
+/*
+DataFrame.dropna([axis, how, thresh, …])
+DataFrame.fillna([value, method, axis, …])
+DataFrame.replace([to_replace, value, …])
+DataFrame.interpolate([method, axis, limit, …])
+ */
+
+    /************************Reshaping, sorting, transposing********************/
+/*
+DataFrame.droplevel(level[, axis])
+DataFrame.pivot([index, columns, values])
+DataFrame.pivot_table([values, index, …])
+DataFrame.reorder_levels(order[, axis])
+DataFrame.sort_values(by[, axis, ascending, …])
+DataFrame.sort_index([axis, level, …])
+DataFrame.nlargest(n, columns[, keep])
+DataFrame.nsmallest(n, columns[, keep])
+DataFrame.swaplevel([i, j, axis])
+DataFrame.stack([level, dropna])
+DataFrame.unstack([level, fill_value])
+DataFrame.swapaxes(axis1, axis2[, copy])
+DataFrame.melt([id_vars, value_vars, …])
+DataFrame.squeeze([axis])
+DataFrame.to_panel()
+DataFrame.to_xarray()
+DataFrame.T
+DataFrame.transpose(*args, **kwargs)
+ */
+
+    /************************Combining / joining / merging********************/
+/*
+DataFrame.append(other[, ignore_index, …])
+DataFrame.assign(**kwargs)
+DataFrame.join(other[, on, how, lsuffix, …])
+DataFrame.merge(right[, how, on, left_on, …])
+DataFrame.update(other[, join, overwrite, …])
+ */
+    /************************Time series-related********************/
+/*
+DataFrame.asfreq(freq[, method, how, …])
+DataFrame.asof(where[, subset])
+DataFrame.shift([periods, freq, axis, …])
+DataFrame.slice_shift([periods, axis])
+DataFrame.tshift([periods, freq, axis])
+DataFrame.first_valid_index()
+DataFrame.last_valid_index()
+DataFrame.resample(rule[, how, axis, …])
+DataFrame.to_period([freq, axis, copy])
+DataFrame.to_timestamp([freq, how, axis, copy])
+DataFrame.tz_convert(tz[, axis, level, copy])
+DataFrame.tz_localize(tz[, axis, level, …])
+ */
+    /************************Serialization / IO / Conversion********************/
+/*
+DataFrame.from_csv(path[, header, sep, …])
+DataFrame.from_dict(data[, orient, dtype, …])
+DataFrame.from_items(items[, columns, orient])
+DataFrame.from_records(data[, index, …])
+DataFrame.info([verbose, buf, max_cols, …])
+DataFrame.to_parquet(fname[, engine, …])
+DataFrame.to_pickle(path[, compression, …])
+DataFrame.to_csv([path_or_buf, sep, na_rep, …])
+DataFrame.to_hdf(path_or_buf, key, **kwargs)
+DataFrame.to_sql(name, con[, schema, …])
+DataFrame.to_dict([orient, into])
+DataFrame.to_excel(excel_writer[, …])
+DataFrame.to_json([path_or_buf, orient, …])
+DataFrame.to_html([buf, columns, col_space, …])
+DataFrame.to_feather(fname)
+DataFrame.to_latex([buf, columns, …])
+DataFrame.to_stata(fname[, convert_dates, …])
+DataFrame.to_msgpack([path_or_buf, encoding])
+DataFrame.to_gbq(destination_table[, …])
+DataFrame.to_records([index, …])
+DataFrame.to_sparse([fill_value, kind])
+DataFrame.to_dense()
+DataFrame.to_string([buf, columns, …])
+DataFrame.to_clipboard([excel, sep])
+DataFrame.style
+ */
     /************************Layer on Table API********************/
     @Override
     public DataFrame copy() {
