@@ -15,7 +15,10 @@
 package tech.tablesaw.api;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Streams;
 import com.google.common.primitives.Ints;
+import io.github.classgraph.ClassGraph;
+import io.github.classgraph.ScanResult;
 import it.unimi.dsi.fastutil.ints.IntArrays;
 import it.unimi.dsi.fastutil.ints.IntComparator;
 import tech.tablesaw.aggregate.AggregateFunction;
@@ -25,7 +28,10 @@ import tech.tablesaw.aggregate.Summarizer;
 import tech.tablesaw.columns.Column;
 import tech.tablesaw.io.DataFrameReader;
 import tech.tablesaw.io.DataFrameWriter;
-import tech.tablesaw.io.html.HtmlTableWriter;
+import tech.tablesaw.io.DataReader;
+import tech.tablesaw.io.DataWriter;
+import tech.tablesaw.io.ReaderRegistry;
+import tech.tablesaw.io.WriterRegistry;
 import tech.tablesaw.joining.DataFrameJoiner;
 import tech.tablesaw.selection.BitmapBackedSelection;
 import tech.tablesaw.selection.Selection;
@@ -44,6 +50,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 import static tech.tablesaw.aggregate.AggregateFunctions.countMissing;
@@ -58,6 +65,13 @@ import static tech.tablesaw.selection.Selection.selectNRowsAtRandom;
  */
 public class Table extends Relation implements Iterable<Row> {
 
+    public static final ReaderRegistry defaultReaderRegistry = new ReaderRegistry();
+    public static final WriterRegistry defaultWriterRegistry = new WriterRegistry();
+
+    static {
+        autoRegisterReadersAndWriters();
+    }
+
     /**
      * The columns that hold the data in this table
      */
@@ -68,10 +82,25 @@ public class Table extends Relation implements Iterable<Row> {
     private String name;
 
     /**
+     * Returns a new table
+     */
+    private Table() {
+    }
+
+    /**
      * Returns a new table initialized with the given name
      */
     private Table(String name) {
         this.name = name;
+    }
+
+    /**
+     * Returns a new Table initialized with the given columns
+     *
+     * @param columns One or more columns, all of which must have either the same length or size 0
+     */
+    protected Table(Column<?>... columns) {
+        this(null, columns);
     }
 
     /**
@@ -87,6 +116,28 @@ public class Table extends Relation implements Iterable<Row> {
         }
     }
 
+    private static void autoRegisterReadersAndWriters() {
+        try (ScanResult scanResult = new ClassGraph().enableAllInfo().whitelistPackages("tech.tablesaw.io").scan()) {
+            List<String> classes = new ArrayList<>();
+            classes.addAll(scanResult.getClassesImplementing(DataWriter.class.getName()).getNames());
+            classes.addAll(scanResult.getClassesImplementing(DataReader.class.getName()).getNames());
+            for (String clazz : classes) {
+                try {
+                    Class.forName(clazz);
+                } catch (ClassNotFoundException e) {
+                    throw new IllegalStateException(e);
+                }
+            }
+        }
+    }
+
+    /**
+     * Returns a new, empty table (without rows or columns)
+     */
+    public static Table create() {
+        return new Table();
+    }
+
     /**
      * Returns a new, empty table (without rows or columns) with the given name
      */
@@ -95,12 +146,22 @@ public class Table extends Relation implements Iterable<Row> {
     }
 
     /**
+     * Returns a new table with the given columns
+     *
+     * @param columns one or more columns, all of the same @code{column.size()}
+     */
+    public static Table create(Column<?>... columns) {
+        return new Table(columns);
+    }
+
+    /**
      * Returns a new table with the given columns and given name
      *
-     * @param columns One or more columns, all of the same @code{column.size()}
+     * @param name the name for this table 
+     * @param columns one or more columns, all of the same @code{column.size()}
      */
-    public static Table create(final String tableName, final Column<?>... columns) {
-        return new Table(tableName, columns);
+    public static Table create(String name, Column<?>... columns) {
+        return new Table(name, columns);
     }
 
     /**
@@ -128,11 +189,11 @@ public class Table extends Relation implements Iterable<Row> {
     }
 
     public static DataFrameReader read() {
-        return new DataFrameReader();
+        return new DataFrameReader(defaultReaderRegistry);
     }
 
     public DataFrameWriter write() {
-        return new DataFrameWriter(this);
+        return new DataFrameWriter(defaultWriterRegistry, this);
     }
 
     /**
@@ -394,6 +455,28 @@ public class Table extends Relation implements Iterable<Row> {
         tables[1] = where(table2Selection);
         return tables;
     }
+    
+    /**
+     * Splits the table into two stratified samples, this uses the specified column to divide the table into groups, randomly assigning records to each according to the proportion given in trainingProportion. 
+     * @param column the column to be used for the stratified sampling
+     * @param table1Proportion The proportion to go in the first table
+     * @return An array two tables, with the first table having the proportion specified in the method parameter,
+     * and the second table having the balance of the rows
+     */
+    public Table[] stratifiedSampleSplit(CategoricalColumn<?> column, double table1Proportion) {
+        Preconditions.checkArgument(containsColumn(column),
+                "The categorical column must be part of the table, you can create a string column and add it to this table before sampling.");
+        final Table first = emptyCopy();
+        final Table second = emptyCopy();
+        
+        splitOn(column).asTableList().forEach(tab-> {
+            Table[] splits = tab.sampleSplit(table1Proportion); 
+            first.append(splits[0]);
+            second.append(splits[1]);
+        });
+        
+        return new Table[]{ first, second };
+    }
 
     /**
      * Returns a table consisting of randomly selected records from this table. The sample size is based on the
@@ -447,7 +530,7 @@ public class Table extends Relation implements Iterable<Row> {
     /**
      * Sorts this table into a new table on the columns indexed
      * <p>
-     * if index is negative then sort that column in decending order otherwise sort ascending
+     * if index is negative then sort that column in descending order otherwise sort ascending
      */
     public Table sortOn(int... columnIndexes) {
         List<String> names = new ArrayList<>();
@@ -591,6 +674,12 @@ public class Table extends Relation implements Iterable<Row> {
         }
     }
 
+    public Row row(int rowIndex) {
+        Row row = new Row(Table.this);
+        row.at(rowIndex);
+        return row;
+    }
+
     public Table rows(int... rowNumbers) {
         Preconditions.checkArgument(Ints.max(rowNumbers) <= rowCount());
         return where(Selection.with(rowNumbers));
@@ -603,8 +692,30 @@ public class Table extends Relation implements Iterable<Row> {
         return where(selection);
     }
 
+    /**
+     * Retains the first rowCount rows if rowCount positive.
+     * Retains the last rowCount rows if rowCount negative.
+     */
+    public Table inRange(int rowCount) {
+        Preconditions.checkArgument(rowCount <= rowCount());
+        int rowStart = rowCount >= 0 ? 0 : rowCount() + rowCount;
+        int rowEnd = rowCount >= 0 ? rowCount : rowCount();
+        return where(Selection.withRange(rowStart, rowEnd));
+    }
+
     public Table inRange(int rowStart, int rowEnd) {
         Preconditions.checkArgument(rowEnd <= rowCount());
+        return where(Selection.withRange(rowStart, rowEnd));
+    }
+
+    /**
+     * Drops the first rowCount rows if rowCount positive.
+     * Drops the last rowCount rows if rowCount negative.
+     */
+    public Table dropRange(int rowCount) {
+        Preconditions.checkArgument(rowCount <= rowCount());
+        int rowStart = rowCount >= 0 ? rowCount : 0;
+        int rowEnd = rowCount >= 0 ? rowCount() : rowCount() + rowCount;
         return where(Selection.withRange(rowStart, rowEnd));
     }
 
@@ -688,10 +799,6 @@ public class Table extends Relation implements Iterable<Row> {
      */
     public TableSliceGroup splitOn(CategoricalColumn<?>... columns) {
         return StandardTableSliceGroup.create(this, columns);
-    }
-
-    public String printHtml() {
-        return HtmlTableWriter.write(this);
     }
 
     public Table structure() {
@@ -909,13 +1016,27 @@ public class Table extends Relation implements Iterable<Row> {
     }
 
     /**
+     * Returns a table containing two columns, the grouping column, and a column named "Count" that contains
+     * the counts for each grouping column value
+     *
+     * @param categoricalColumnName The name of a CategoricalColumn in this table
+     * @return  A table containing counts of rows grouped by the categorical column
+     * @throws  ClassCastException if the categoricalColumnName parameter is the name of a column that does not
+     *      * implement categorical
+     */
+    public Table countBy(String categoricalColumnName)  {
+        CategoricalColumn<?> groupingColumn = categoricalColumn(categoricalColumnName);
+        return groupingColumn.countByCategory();
+    }
+
+    /**
      * Returns a new DataFrameJoiner initialized with multiple {@code columnNames}
      * @param columnNames   Name of the columns to join on.
      * @return              The new DataFrameJoiner
      */
-    public DataFrameJoiner join(String... columnNames) {
+    public DataFrameJoiner joinOn(String... columnNames) {
         return new DataFrameJoiner(this, columnNames);
-	}
+    }
 
     public Table missingValueCounts() {
         return summarize(columnNames(), countMissing).apply();
@@ -940,27 +1061,24 @@ public class Table extends Relation implements Iterable<Row> {
         };
     }
 
+    public Stream<Row> stream() {
+        return Streams.stream(iterator());
+    }
+
     /**
      * Applies the operation in {@code doable} to every row in the table
+     * @deprecated use {@code stream().forEach}
      */
     public void doWithRows(Consumer<Row> doable) {
-        Row row = new Row(this);
-        while (row.hasNext()) {
-            doable.accept(row.next());
-        }
+        stream().forEach(doable);
     }
 
     /**
      * Applies the predicate to each row, and return true if any row returns true
+     * @deprecated use {@code stream().anyMatch}
      */
     public boolean detect(Predicate<Row> predicate) {
-        Row row = new Row(this);
-        while (row.hasNext()) {
-            if (predicate.test(row.next())) {
-                return true;
-            }
-        }
-        return false;
+        return stream().anyMatch(predicate);
     }
 
     /**

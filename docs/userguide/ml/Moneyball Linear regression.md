@@ -12,12 +12,13 @@ In baseball, you make the playoffs by winning more games than your rivals, but y
 
 Specifically, they wanted to know how to spend their salary dollars to produce the most wins. Statistics like "Batting Average" are available for individual players so if you knew Batting Average had the greatest impact, you can trade for players with high batting averages, and thus improve your odds of success. 
 
-To do regression modeling in Tablesaw, we'll first need to import the optional `tablesaw-smile` module:
+To do regression modeling in Tablesaw, we'll first need to import Smile:
 
 ```
 <dependency>
-  <groupId>tech.tablesaw</groupId>
-  <artifactId>tablesaw-smile</artifactId>
+  <groupId>com.github.haifengl</groupId>
+  <artifactId>smile-core</artifactId>
+  <version>1.5.3</version>
 </dependency>
 ```
 
@@ -257,8 +258,10 @@ Table AsIn2001 = moneyball.select("year", "OOBP", "OBP", "OSLG", "SLG")
 Now we get the prediction:
 
 ```java
-double[][] values = new double [][] {{0.308, 0.345, .38, 0.439}};
+{% raw %}
+double[][] values = new double[][] {{ 0.308, 0.345, .38, 0.439 }};
 double[] value = winsFinal.predict(values);
+{% endraw %}
 ```
 
 The model predicted that the 2001 A's would win 102 games given their slugging and On-Base stats. They won 103. 

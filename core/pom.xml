@@ -5,7 +5,7 @@
     <parent>
         <groupId>tech.tablesaw</groupId>
         <artifactId>tablesaw-parent</artifactId>
-        <version>0.32.1-SNAPSHOT</version>
+        <version>0.34.2-SNAPSHOT</version>
     </parent>
 
     <artifactId>tablesaw-core</artifactId>
@@ -79,9 +79,14 @@
                     </execution>
                 </executions>
             </plugin>
-
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <argLine>-Duser.language=en-US -Duser.region=US</argLine>
+                </configuration>
+            </plugin>
         </plugins>
-
     </build>
 
     <dependencies>
@@ -111,30 +116,14 @@
             <version>2.7.5</version>
         </dependency>
         <dependency>
-            <groupId>tech.tablesaw</groupId>
-            <artifactId>tablesaw-excel</artifactId>
-            <version>0.32.1-SNAPSHOT</version>
-            <optional>true</optional>
-            <scope>provided</scope> <!-- because the shade plugin doesn't exclude optional dependencies -->
+            <groupId>io.github.classgraph</groupId>
+            <artifactId>classgraph</artifactId>
+            <version>4.8.22</version>
         </dependency>
         <dependency>
-            <groupId>tech.tablesaw</groupId>
-            <artifactId>tablesaw-html</artifactId>
-            <version>0.32.1-SNAPSHOT</version>
-            <optional>true</optional>
-            <scope>provided</scope> <!-- because the shade plugin doesn't exclude optional dependencies -->
-        </dependency>
-        <dependency>
-            <groupId>tech.tablesaw</groupId>
-            <artifactId>tablesaw-json</artifactId>
-            <version>0.32.1-SNAPSHOT</version>
-            <optional>true</optional>
-            <scope>provided</scope> <!-- because the shade plugin doesn't exclude optional dependencies -->
-        </dependency>
-        <dependency>
-            <groupId>tech.tablesaw</groupId>
-            <artifactId>tablesaw-smile</artifactId>
-            <version>0.32.1-SNAPSHOT</version>
+            <groupId>com.github.haifengl</groupId>
+            <artifactId>smile-data</artifactId>
+            <version>1.5.2 </version>
             <optional>true</optional>
             <scope>provided</scope> <!-- because the shade plugin doesn't exclude optional dependencies -->
         </dependency>
@@ -149,15 +138,21 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>com.github.jbellis</groupId>
-            <artifactId>jamm</artifactId> <!-- Memory usage testing -->
-            <version>0.3.2</version>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.8.1</version>
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>com.devskiller</groupId>
-            <artifactId>jfairy</artifactId>
-            <version>0.6.2</version>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-text</artifactId>
+            <version>1.6</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.github.jbellis</groupId>
+            <artifactId>jamm</artifactId> <!-- Memory usage testing -->
+            <version>0.3.2</version>
             <scope>test</scope>
         </dependency>
         <dependency>

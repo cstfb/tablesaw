@@ -15,18 +15,20 @@
 package tech.tablesaw.io.fixed;
 
 import com.univocity.parsers.fixed.FixedWidthFields;
-
 import tech.tablesaw.api.ColumnType;
 import tech.tablesaw.io.ReadOptions;
+import tech.tablesaw.io.Source;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
+import java.net.URL;
+import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
 public class FixedWidthReadOptions extends ReadOptions {
 
-    // we always have one of these (file, reader, or inputStream)
     private final ColumnType[] columnTypes;
     private final FixedWidthFields columnSpecs;
     private final String lineEnding;
@@ -51,6 +53,10 @@ public class FixedWidthReadOptions extends ReadOptions {
         maxNumberOfColumns = builder.maxNumberOfColumns;
     }
 
+    public static Builder builder(Source source) {
+        return new Builder(source);
+    }
+
     public static Builder builder(File file) {
         return new Builder(file).tableName(file.getName());
     }
@@ -68,8 +74,8 @@ public class FixedWidthReadOptions extends ReadOptions {
      * 2. Provide the array of column types as an option. If you provide the columnType array,
      * we skip type detection and can avoid reading the entire file
      */
-    public static Builder builder(InputStream stream, String tableName) {
-        return new Builder(stream).tableName(tableName);
+    public static Builder builder(InputStream stream) {
+        return new Builder(stream);
     }
     /**
      * This method may cause tablesaw to buffer the entire InputStream.
@@ -80,9 +86,8 @@ public class FixedWidthReadOptions extends ReadOptions {
      * 2. Provide the array of column types as an option. If you provide the columnType array,
      * we skip type detection and can avoid reading the entire file
      */
-    public static Builder builder(Reader reader, String tableName) {
-        Builder builder = new Builder(reader);
-        return builder.tableName(tableName);
+    public static Builder builder(Reader reader) {
+        return new Builder(reader);
     }
 
     public ColumnType[] columnTypes() {
@@ -133,6 +138,14 @@ public class FixedWidthReadOptions extends ReadOptions {
         protected ColumnType[] columnTypes;
         protected Integer maxNumberOfColumns = 10_000;
 
+        protected Builder(Source source) {
+            super(source);
+        }
+
+        protected Builder(URL url) throws IOException {
+            super(url);
+        }
+
         protected Builder(File file) {
             super(file);
         }
@@ -150,10 +163,18 @@ public class FixedWidthReadOptions extends ReadOptions {
             return this;
         }
 
+        public Builder maxCharsPerColumn(int maxCharsPerColumn) {
+            super.maxCharsPerColumn(maxCharsPerColumn);
+            return this;
+        }
 
         public Builder lineEnding(String lineEnding) {
             this.lineEnding = lineEnding;
             return this;
+        }
+
+        public Builder systemLineEnding() {
+            return lineEnding(System.lineSeparator());
         }
 
         public Builder padding(char padding) {
@@ -221,19 +242,40 @@ public class FixedWidthReadOptions extends ReadOptions {
         }
 
         @Override
+        @Deprecated
         public Builder dateFormat(String dateFormat) {
             super.dateFormat(dateFormat);
             return this;
         }
 
         @Override
+        @Deprecated
         public Builder timeFormat(String timeFormat) {
             super.timeFormat(timeFormat);
             return this;
         }
 
         @Override
+        @Deprecated
         public Builder dateTimeFormat(String dateTimeFormat) {
+            super.dateTimeFormat(dateTimeFormat);
+            return this;
+        }
+
+        @Override
+        public Builder dateFormat(DateTimeFormatter dateFormat) {
+            super.dateFormat(dateFormat);
+            return this;
+        }
+
+        @Override
+        public Builder timeFormat(DateTimeFormatter timeFormat) {
+            super.timeFormat(timeFormat);
+            return this;
+        }
+
+        @Override
+        public Builder dateTimeFormat(DateTimeFormatter dateTimeFormat) {
             super.dateTimeFormat(dateTimeFormat);
             return this;
         }
@@ -251,8 +293,8 @@ public class FixedWidthReadOptions extends ReadOptions {
         }
 
         @Override
-        public Builder minimizeColumnSizes(boolean minimizeColumnSizes) {
-            super.minimizeColumnSizes(minimizeColumnSizes);
+        public Builder minimizeColumnSizes() {
+            super.minimizeColumnSizes();
             return this;
         }
     }

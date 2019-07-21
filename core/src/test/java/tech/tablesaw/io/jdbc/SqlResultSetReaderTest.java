@@ -21,9 +21,11 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.sql.Types;
 
 import org.junit.jupiter.api.Test;
 
+import tech.tablesaw.api.ColumnType;
 import tech.tablesaw.api.Table;
 import tech.tablesaw.columns.numbers.DoubleColumnType;
 import tech.tablesaw.columns.numbers.FloatColumnType;
@@ -68,28 +70,28 @@ public class SqlResultSetReaderTest {
 
             sql = "SELECT * FROM coffee";
             try (ResultSet rs = stmt.executeQuery(sql)) {
-                Table coffee = SqlResultSetReader.read(rs, "Coffee");
+                Table coffee = SqlResultSetReader.read(rs);
                 assertEquals(4, coffee.columnCount());
                 assertEquals(18, coffee.rowCount());
             }
 
             sql = "SELECT * FROM Customer";
             try (ResultSet rs = stmt.executeQuery(sql)) {
-                Table customer = SqlResultSetReader.read(rs, "Customer");
+                Table customer = SqlResultSetReader.read(rs);
                 assertEquals(7, customer.columnCount());
                 assertEquals(3, customer.rowCount());
             }
 
             sql = "SELECT * FROM UnpaidOrder";
             try (ResultSet rs = stmt.executeQuery(sql)) {
-                Table unpaidInvoice = SqlResultSetReader.read(rs, "Unpaid Invoice");
+                Table unpaidInvoice = SqlResultSetReader.read(rs);
                 assertEquals(5, unpaidInvoice.columnCount());
                 assertEquals(0, unpaidInvoice.rowCount());
             }
 
             sql = "SELECT * FROM Numbers";
             try (ResultSet rs = stmt.executeQuery(sql)) {
-                Table numbers = SqlResultSetReader.read(rs, "Numbers");
+                Table numbers = SqlResultSetReader.read(rs);
                 assertEquals(13, numbers.columnCount());
                 assertEquals(3, numbers.rowCount());
                 assertTrue(numbers.column("Description").type() instanceof StringColumnType);
@@ -107,5 +109,10 @@ public class SqlResultSetReaderTest {
             }
 
         }
+    }
+
+    @Test
+    public void invalidPrecision() {
+        assertEquals(ColumnType.DOUBLE, SqlResultSetReader.getColumnType(Types.NUMERIC, 0, 0));
     }
 }

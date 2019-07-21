@@ -27,18 +27,21 @@ import tech.tablesaw.columns.AbstractColumnParser;
 import tech.tablesaw.columns.Column;
 import tech.tablesaw.columns.datetimes.DateTimeColumnFormatter;
 import tech.tablesaw.columns.datetimes.DateTimeColumnType;
-import tech.tablesaw.columns.datetimes.DateTimeFillers;
 import tech.tablesaw.columns.datetimes.DateTimeFilters;
 import tech.tablesaw.columns.datetimes.DateTimeMapFunctions;
 import tech.tablesaw.columns.datetimes.PackedLocalDateTime;
+import tech.tablesaw.columns.temporal.TemporalFillers;
 import tech.tablesaw.selection.Selection;
 import tech.tablesaw.sorting.comparators.DescendingLongComparator;
 
 import java.nio.ByteBuffer;
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -55,7 +58,7 @@ import java.util.function.Supplier;
  * A column in a table that contains long-integer encoded (packed) local date-time values
  */
 public class DateTimeColumn extends AbstractColumn<LocalDateTime>
-    implements DateTimeMapFunctions, DateTimeFilters, DateTimeFillers<DateTimeColumn>,
+    implements DateTimeMapFunctions, DateTimeFilters, TemporalFillers<LocalDateTime, DateTimeColumn>,
         CategoricalColumn<LocalDateTime> {
 
     private final LongComparator reverseLongComparator = DescendingLongComparator.instance();
@@ -93,6 +96,23 @@ public class DateTimeColumn extends AbstractColumn<LocalDateTime>
             column.append(date);
         }
         return column;
+    }
+
+    @Override
+    public DateTimeColumn plus(long amountToAdd, ChronoUnit unit) {
+        DateTimeColumn newColumn = emptyCopy();
+        newColumn.setName(temporalColumnName(this, amountToAdd, unit));
+        DateTimeColumn column1 = this;
+
+        for (int r = 0; r < column1.size(); r++) {
+            long packedDateTime = column1.getLongInternal(r);
+            if (packedDateTime == DateTimeColumnType.missingValueIndicator()) {
+                newColumn.appendMissing();
+            } else {
+                newColumn.appendInternal(PackedLocalDateTime.plus(packedDateTime, amountToAdd, unit));
+            }
+        }
+        return newColumn;
     }
 
     public static DateTimeColumn create(String name, LocalDateTime[] data) {
@@ -375,7 +395,7 @@ public class DateTimeColumn extends AbstractColumn<LocalDateTime>
      * Returns an array where each entry is the difference, measured in seconds,
      * between the LocalDateTime and midnight, January 1, 1970 UTC.
      *
-     * If a value is missing, Long.MIN_VALUE is used
+     * If a value is missing, DateTimeColumnType.missingValueIndicator() is used
      */
     public long[] asEpochSecondArray() {
         return asEpochSecondArray(ZoneOffset.UTC);
@@ -384,14 +404,14 @@ public class DateTimeColumn extends AbstractColumn<LocalDateTime>
     /**
      * Returns the seconds from epoch for each value as an array based on the given offset
      *
-     * If a value is missing, Long.MIN_VALUE is used
+     * If a value is missing, DateTimeColumnType.missingValueIndicator() is used
      */
     public long[] asEpochSecondArray(ZoneOffset offset) {
         long[] output = new long[data.size()];
         for (int i = 0; i < data.size(); i++) {
             LocalDateTime dateTime = PackedLocalDateTime.asLocalDateTime(data.getLong(i));
             if (dateTime == null) {
-                output[i] = Long.MIN_VALUE;
+                output[i] = DateTimeColumnType.missingValueIndicator();
             } else {
                 output[i] = dateTime.toEpochSecond(offset);
             }
@@ -403,7 +423,7 @@ public class DateTimeColumn extends AbstractColumn<LocalDateTime>
      * Returns an array where each entry is the difference, measured in milliseconds,
      * between the LocalDateTime and midnight, January 1, 1970 UTC.
      *
-     * If a missing value is encountered, Long.MIN_VALUE is inserted in the array
+     * If a missing value is encountered, DateTimeColumnType.missingValueIndicator() is inserted in the array
      */
     public long[] asEpochMillisArray() {
         return asEpochMillisArray(ZoneOffset.UTC);
@@ -413,19 +433,36 @@ public class DateTimeColumn extends AbstractColumn<LocalDateTime>
      * Returns an array where each entry is the difference, measured in milliseconds,
      * between the LocalDateTime and midnight, January 1, 1970 UTC.
      *
-     * If a missing value is encountered, Long.MIN_VALUE is inserted in the array
+     * If a missing value is encountered, DateTimeColumnType.missingValueIndicator() is inserted in the array
      */
     public long[] asEpochMillisArray(ZoneOffset offset) {
         long[] output = new long[data.size()];
         for (int i = 0; i < data.size(); i++) {
             LocalDateTime dateTime = PackedLocalDateTime.asLocalDateTime(data.getLong(i));
             if (dateTime == null) {
-                output[i] = Long.MIN_VALUE;
+                output[i] = DateTimeColumnType.missingValueIndicator();
             } else {
                 output[i] = dateTime.toInstant(offset).toEpochMilli();
             }
         }
         return output;
+    }
+
+    public InstantColumn asInstantColumn() {
+        return asInstantColumn(ZoneOffset.UTC);
+    }
+
+    public InstantColumn asInstantColumn(ZoneId zone) {
+        Instant[] output = new Instant[data.size()];
+        for (int i = 0; i < data.size(); i++) {
+            LocalDateTime dateTime = PackedLocalDateTime.asLocalDateTime(data.getLong(i));
+            if (dateTime == null) {
+                output[i] = null;
+            } else {
+                output[i] = dateTime.atZone(zone).toInstant();
+            }
+        }
+        return InstantColumn.create(name(), output);
     }
 
     @Override
@@ -580,7 +617,7 @@ public class DateTimeColumn extends AbstractColumn<LocalDateTime>
     }
 
     public DoubleColumn asDoubleColumn() {
-	return DoubleColumn.create(name(), asEpochSecondArray());
+        return DoubleColumn.create(name(), asEpochSecondArray());
     }
 
     /**

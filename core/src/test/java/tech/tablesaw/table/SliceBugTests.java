@@ -60,7 +60,7 @@ public class SliceBugTests {
             DoubleColumn priceColFromName = slice.doubleColumn("price");
 
             assertTrue(Arrays.equals(priceColFromName.asDoubleArray(), priceColFromIndex.asDoubleArray()),
-        	    "Columns should have same data");
+                    "Columns should have same data");
         }
     }
 
@@ -69,7 +69,7 @@ public class SliceBugTests {
         Table salesTable = loadTableFromDB();
 
         Table filteredTable = salesTable.select(salesTable.columnNames().toArray(new String[0]))
-                .where(salesTable.dateTimeColumn("sale_timestamp")
+                .where(salesTable.instantColumn("sale_timestamp").asLocalDateTimeColumn()
                         .isAfter(LocalDateTime.of(2018, 1, 1, 13, 1, 3)
                         ));
         filteredTable.setName("filteredTable");

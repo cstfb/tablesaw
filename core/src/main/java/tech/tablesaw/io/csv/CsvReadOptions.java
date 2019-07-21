@@ -14,32 +14,43 @@
 
 package tech.tablesaw.io.csv;
 
-import java.io.File;
-import java.io.InputStream;
-import java.io.Reader;
-import java.util.Locale;
-
 import tech.tablesaw.api.ColumnType;
 import tech.tablesaw.io.ReadOptions;
+import tech.tablesaw.io.Source;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.Reader;
+import java.io.StringReader;
+import java.net.URL;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 
 public class CsvReadOptions extends ReadOptions {
 
     private final ColumnType[] columnTypes;
     private final Character separator;
+    private final Character quoteChar;
     private final String lineEnding;
     private final Integer maxNumberOfColumns;
     private final Character commentPrefix;
     private final boolean lineSeparatorDetectionEnabled;
 
     private CsvReadOptions(CsvReadOptions.Builder builder) {
-	super(builder);
+        super(builder);
 
         columnTypes = builder.columnTypes;
         separator = builder.separator;
+        quoteChar = builder.quoteChar;
         lineEnding = builder.lineEnding;
         maxNumberOfColumns = builder.maxNumberOfColumns;
         commentPrefix = builder.commentPrefix;
         lineSeparatorDetectionEnabled = builder.lineSeparatorDetectionEnabled;
+    }
+
+    public static Builder builder(Source source) {
+        return new Builder(source);
     }
 
     public static Builder builder(File file) {
@@ -50,6 +61,22 @@ public class CsvReadOptions extends ReadOptions {
         return new Builder(new File(fileName));
     }
 
+    public static Builder builder(URL url) throws IOException {
+        return new Builder(url);
+    }
+
+    public static Builder builderFromFile(String fileName) {
+        return new Builder(new File(fileName));
+    }
+
+    public static Builder builderFromString(String contents) {
+        return new Builder(new StringReader(contents));
+    }
+
+    public static Builder builderFromUrl(String url) throws IOException {
+        return new Builder(new URL(url));
+    }
+
     /**
      * This method may cause tablesaw to buffer the entire InputStream.
      * <p>
@@ -58,8 +85,8 @@ public class CsvReadOptions extends ReadOptions {
      * 2. Provide the array of column types as an option. If you provide the columnType array,
      * we skip type detection and can avoid reading the entire file
      */
-    public static Builder builder(InputStream stream, String tableName) {
-        return new Builder(stream).tableName(tableName);
+    public static Builder builder(InputStream stream) {
+        return new Builder(stream);
     }
 
     /**
@@ -71,9 +98,8 @@ public class CsvReadOptions extends ReadOptions {
      * 2. Provide the array of column types as an option. If you provide the columnType array,
      * we skip type detection and can avoid reading the entire file
      */
-    public static Builder builder(Reader reader, String tableName) {
-        Builder builder = new Builder(reader);
-        return builder.tableName(tableName);
+    public static Builder builder(Reader reader) {
+        return new Builder(reader);
     }
 
     public ColumnType[] columnTypes() {
@@ -84,12 +110,16 @@ public class CsvReadOptions extends ReadOptions {
         return separator;
     }
 
+    public Character quoteChar() {
+        return quoteChar;
+    }
+
     public String lineEnding() {
         return lineEnding;
     }
 
     public boolean lineSeparatorDetectionEnabled() {
-	return lineSeparatorDetectionEnabled;
+        return lineSeparatorDetectionEnabled;
     }
 
     public Integer maxNumberOfColumns() {
@@ -100,14 +130,27 @@ public class CsvReadOptions extends ReadOptions {
         return commentPrefix;
     }
 
+    public int maxCharsPerColumn() {
+        return maxCharsPerColumn;
+    }
+
     public static class Builder extends ReadOptions.Builder {
 
         private Character separator = ',';
+        private Character quoteChar;
         private String lineEnding;
         private ColumnType[] columnTypes;
         private Integer maxNumberOfColumns = 10_000;
         private Character commentPrefix;
         private boolean lineSeparatorDetectionEnabled = true;
+
+        protected Builder(Source source) {
+            super(source);
+        }
+
+        protected Builder(URL url) throws IOException {
+            super(url);
+        }
 
         protected Builder(File file) {
             super(file);
@@ -128,6 +171,11 @@ public class CsvReadOptions extends ReadOptions {
 
         public Builder separator(Character separator) {
             this.separator = separator;
+            return this;
+        }
+
+        public Builder quoteChar(Character quoteChar) {
+            this.quoteChar = quoteChar;
             return this;
         }
 
@@ -176,20 +224,46 @@ public class CsvReadOptions extends ReadOptions {
         }
 
         @Override
+        @Deprecated
         public Builder dateFormat(String dateFormat) {
             super.dateFormat(dateFormat);
             return this;
         }
 
         @Override
+        @Deprecated
         public Builder timeFormat(String timeFormat) {
             super.timeFormat(timeFormat);
             return this;
         }
 
         @Override
+        @Deprecated
         public Builder dateTimeFormat(String dateTimeFormat) {
             super.dateTimeFormat(dateTimeFormat);
+            return this;
+        }
+
+        @Override
+        public Builder dateFormat(DateTimeFormatter dateFormat) {
+            super.dateFormat(dateFormat);
+            return this;
+        }
+
+        @Override
+        public Builder timeFormat(DateTimeFormatter timeFormat) {
+            super.timeFormat(timeFormat);
+            return this;
+        }
+
+        @Override
+        public Builder dateTimeFormat(DateTimeFormatter dateTimeFormat) {
+            super.dateTimeFormat(dateTimeFormat);
+            return this;
+        }
+
+        public Builder maxCharsPerColumn(int maxCharsPerColumn) {
+            super.maxCharsPerColumn(maxCharsPerColumn);
             return this;
         }
 
@@ -206,10 +280,9 @@ public class CsvReadOptions extends ReadOptions {
         }
 
         @Override
-        public Builder minimizeColumnSizes(boolean minimizeColumnSizes) {
-            super.minimizeColumnSizes(minimizeColumnSizes);
+        public Builder minimizeColumnSizes() {
+            super.minimizeColumnSizes();
             return this;
         }
     }
-
 }

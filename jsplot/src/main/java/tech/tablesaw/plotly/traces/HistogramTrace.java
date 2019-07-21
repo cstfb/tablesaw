@@ -4,6 +4,7 @@ import com.mitchellbosecke.pebble.error.PebbleException;
 import com.mitchellbosecke.pebble.template.PebbleTemplate;
 import tech.tablesaw.api.NumericColumn;
 import tech.tablesaw.plotly.Utils;
+import tech.tablesaw.plotly.components.Marker;
 
 import java.io.IOException;
 import java.io.StringWriter;
@@ -18,6 +19,7 @@ public class HistogramTrace extends AbstractTrace {
     private final int nBinsY;
     private final boolean autoBinX;
     private final boolean autoBinY;
+    private final Marker marker;
 
     public static HistogramBuilder builder(double[] values) {
         return new HistogramBuilder(values);
@@ -35,8 +37,9 @@ public class HistogramTrace extends AbstractTrace {
         this.autoBinX = builder.autoBinX;
         this.autoBinY = builder.autoBinY;
         this.opacity = builder.opacity;
+        this.marker = builder.marker;
     }
-
+    
     @Override
     public String asJavascript(int i) {
         Writer writer = new StringWriter();
@@ -61,6 +64,10 @@ public class HistogramTrace extends AbstractTrace {
         context.put("nBinsY", nBinsY);
         context.put("autoBinX", autoBinX);
         context.put("autoBinY", autoBinY);
+        if (marker != null) {
+            context.put("marker", marker);
+        }
+
         return context;
     }
 
@@ -72,14 +79,16 @@ public class HistogramTrace extends AbstractTrace {
         private boolean autoBinX;
         private boolean autoBinY;
         private final double[] x;
+        private Marker marker;
 
         private HistogramBuilder(double[] values) {
             this.x = values;
         }
 
         /**
-         * Specifies the maximum number of desired bins. This value will be used in an algorithm that will decide
-         * the optimal bin size such that the histogram best visualizes the distribution of the data.
+         * Specifies the maximum number of desired bins. This value will be used
+         * in an algorithm that will decide the optimal bin size such that the
+         * histogram best visualizes the distribution of the data.
          */
         public HistogramBuilder nBinsX(int bins) {
             this.nBinsX = bins;
@@ -92,11 +101,12 @@ public class HistogramTrace extends AbstractTrace {
         }
 
         /**
-         * Determines whether or not the x axis bin attributes are picked by an algorithm.
-         * Note that this should be set to False if you want to manually set the number of bins using the attributes
-         * in xbins.
+         * Determines whether or not the x axis bin attributes are picked by an
+         * algorithm. Note that this should be set to False if you want to
+         * manually set the number of bins using the attributes in xbins.
          *
-         * Note also that this should be true (default) to use nbinsx to suggest a bin count
+         * Note also that this should be true (default) to use nbinsx to suggest
+         * a bin count
          */
         public HistogramBuilder autoBinX(boolean autoBinX) {
             this.autoBinX = autoBinX;
@@ -105,6 +115,11 @@ public class HistogramTrace extends AbstractTrace {
 
         public HistogramBuilder autoBinY(boolean autoBinY) {
             this.autoBinY = autoBinY;
+            return this;
+        }
+
+        public HistogramBuilder marker(Marker marker) {
+            this.marker = marker;
             return this;
         }
 
@@ -120,6 +135,16 @@ public class HistogramTrace extends AbstractTrace {
 
         public HistogramBuilder name(String name) {
             super.name(name);
+            return this;
+        }
+
+        public HistogramBuilder xAxis(String xAxis) {
+            super.xAxis(xAxis);
+            return this;
+        }
+
+        public HistogramBuilder yAxis(String yAxis) {
+            super.yAxis(yAxis);
             return this;
         }
 

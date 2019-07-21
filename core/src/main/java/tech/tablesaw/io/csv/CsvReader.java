@@ -19,21 +19,32 @@ import com.univocity.parsers.common.AbstractParser;
 import com.univocity.parsers.csv.CsvFormat;
 import com.univocity.parsers.csv.CsvParser;
 import com.univocity.parsers.csv.CsvParserSettings;
+import org.apache.commons.math3.util.Pair;
 import tech.tablesaw.api.ColumnType;
 import tech.tablesaw.api.Table;
+import tech.tablesaw.io.DataReader;
 import tech.tablesaw.io.FileReader;
-import tech.tablesaw.io.TableBuildingUtils;
+import tech.tablesaw.io.ReaderRegistry;
+import tech.tablesaw.io.Source;
 
 import javax.annotation.concurrent.Immutable;
-
-import org.apache.commons.math3.util.Pair;
-
 import java.io.IOException;
 import java.io.Reader;
-import java.util.List;
 
 @Immutable
-public class CsvReader extends FileReader {
+public class CsvReader extends FileReader implements DataReader<CsvReadOptions> {
+
+    private static final CsvReader INSTANCE = new CsvReader();
+
+    static {
+        register(Table.defaultReaderRegistry);
+    }
+
+    public static void register(ReaderRegistry registry) {
+        registry.registerExtension("csv", INSTANCE);
+        registry.registerMimeType("text/csv", INSTANCE);
+        registry.registerOptions(CsvReadOptions.class, INSTANCE);
+    }
 
     /**
      * Constructs a CsvReader
@@ -43,33 +54,24 @@ public class CsvReader extends FileReader {
     }
 
     /**
-     * Constructs a CsvReader with the given list of ColumnTypes
-     * <p>
-     * These are the only types that the CsvReader can detect and parse
-     */
-    public CsvReader(List<ColumnType> typeDetectionList) {
-        super(typeDetectionList);
-    }
-
-    /**
      * Determines column types if not provided by the user
      * Reads all input into memory unless File was provided
      */
-    private Pair<Reader, ColumnType[]> getReaderAndColumnTypes(CsvReadOptions options) throws IOException {
+    private Pair<Reader, ColumnType[]> getReaderAndColumnTypes(Source source, CsvReadOptions options) throws IOException {
         ColumnType[] types = options.columnTypes();
         byte[] bytesCache = null;
 
         if (types == null) {
-            Reader reader = TableBuildingUtils.createReader(options, bytesCache);
-            if (options.file() == null) {
+            Reader reader = source.createReader(bytesCache);
+            if (source.file() == null) {
                 bytesCache = CharStreams.toString(reader).getBytes();
                 // create a new reader since we just exhausted the existing one
-                reader = TableBuildingUtils.createReader(options, bytesCache);
+                reader = source.createReader(bytesCache);
             }
             types = detectColumnTypes(reader, options);
         }
 
-        return Pair.create(TableBuildingUtils.createReader(options, bytesCache), types);
+        return Pair.create(source.createReader(bytesCache), types);
     }
 
     public Table read(CsvReadOptions options) throws IOException {
@@ -77,7 +79,7 @@ public class CsvReader extends FileReader {
     }
 
     private Table read(CsvReadOptions options, boolean headerOnly) throws IOException {
-        Pair<Reader, ColumnType[]> pair = getReaderAndColumnTypes(options);
+        Pair<Reader, ColumnType[]> pair = getReaderAndColumnTypes(options.source(), options);
         Reader reader = pair.getKey();
         ColumnType[] types = pair.getValue();
 
@@ -86,7 +88,7 @@ public class CsvReader extends FileReader {
         try {
             return parseRows(options, headerOnly, reader, types, parser);
         } finally {
-            if (options.reader() == null) {
+            if (options.source().reader() == null) {
                 // if we get a reader back from options it means the client opened it, so let the client close it
                 // if it's null, we close it here.
                 parser.stopParsing();
@@ -115,7 +117,6 @@ public class CsvReader extends FileReader {
      * @throws IOException if file cannot be read
      */
     public String printColumnTypes(CsvReadOptions options) throws IOException {
-
         Table structure = read(options, true).structure();
         return getTypeString(structure);
     }
@@ -132,7 +133,6 @@ public class CsvReader extends FileReader {
      * used to explicitly specify the correct column types.
      */
     protected ColumnType[] detectColumnTypes(Reader reader, CsvReadOptions options) {
-
         boolean header = options.header();
         int linesToSkip = header ? 1 : 0;
 
@@ -150,6 +150,7 @@ public class CsvReader extends FileReader {
         CsvParserSettings settings = new CsvParserSettings();
         settings.setLineSeparatorDetectionEnabled(options.lineSeparatorDetectionEnabled());
         settings.setFormat(csvFormat(options));
+        settings.setMaxCharsPerColumn(options.maxCharsPerColumn());
         if (options.maxNumberOfColumns() != null) {
             settings.setMaxColumns(options.maxNumberOfColumns());
         }
@@ -158,6 +159,9 @@ public class CsvReader extends FileReader {
 
     private CsvFormat csvFormat(CsvReadOptions options) {
         CsvFormat format = new CsvFormat();
+        if (options.quoteChar() != null) {
+            format.setQuote(options.quoteChar());
+        }
         if (options.separator() != null) {
             format.setDelimiter(options.separator());
         }
@@ -168,6 +172,11 @@ public class CsvReader extends FileReader {
             format.setComment(options.commentPrefix());
         }
         return format;
+    }
+
+    @Override
+    public Table read(Source source) throws IOException {
+        return read(CsvReadOptions.builder(source).build());
     }
 
 }

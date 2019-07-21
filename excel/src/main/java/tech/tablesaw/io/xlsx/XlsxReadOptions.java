@@ -1,11 +1,15 @@
 package tech.tablesaw.io.xlsx;
 
+import tech.tablesaw.io.ReadOptions;
+import tech.tablesaw.io.Source;
+
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
+import java.net.URL;
+import java.time.format.DateTimeFormatter;
 import java.util.Locale;
-
-import tech.tablesaw.io.ReadOptions;
 
 public class XlsxReadOptions extends ReadOptions {
 
@@ -13,15 +17,39 @@ public class XlsxReadOptions extends ReadOptions {
         super(builder);
     }
 
+    public static Builder builder(Source source) {
+        return new Builder(source);
+    }
+
     public static Builder builder(File file) {
-        return new Builder(file);
+        return new Builder(file).tableName(file.getName());
     }
 
     public static Builder builder(String fileName) {
         return new Builder(new File(fileName));
     }
-    
+
+    public static Builder builder(URL url) throws IOException {
+        return new Builder(url);
+    }
+
+    public static Builder builderFromFile(String fileName) {
+        return new Builder(new File(fileName));
+    }
+
+    public static Builder builderFromUrl(String url) throws IOException {
+        return new Builder(new URL(url));
+    }
+
     public static class Builder extends ReadOptions.Builder {
+
+        protected Builder(Source source) {
+            super(source);
+        }
+
+        protected Builder(URL url) throws IOException {
+            super(url);
+        }
 
         public Builder(File file) {
             super(file);
@@ -61,19 +89,40 @@ public class XlsxReadOptions extends ReadOptions {
         }
 
         @Override
+        @Deprecated
         public Builder dateFormat(String dateFormat) {
             super.dateFormat(dateFormat);
             return this;
         }
 
         @Override
+        @Deprecated
         public Builder timeFormat(String timeFormat) {
             super.timeFormat(timeFormat);
             return this;
         }
 
         @Override
+        @Deprecated
         public Builder dateTimeFormat(String dateTimeFormat) {
+            super.dateTimeFormat(dateTimeFormat);
+            return this;
+        }
+
+        @Override
+        public Builder dateFormat(DateTimeFormatter dateFormat) {
+            super.dateFormat(dateFormat);
+            return this;
+        }
+
+        @Override
+        public Builder timeFormat(DateTimeFormatter timeFormat) {
+            super.timeFormat(timeFormat);
+            return this;
+        }
+
+        @Override
+        public Builder dateTimeFormat(DateTimeFormatter dateTimeFormat) {
             super.dateTimeFormat(dateTimeFormat);
             return this;
         }
@@ -91,8 +140,8 @@ public class XlsxReadOptions extends ReadOptions {
         }
 
         @Override
-        public Builder minimizeColumnSizes(boolean minimizeColumnSizes) {
-            super.minimizeColumnSizes(minimizeColumnSizes);
+        public Builder minimizeColumnSizes() {
+            super.minimizeColumnSizes();
             return this;
         }
     }
